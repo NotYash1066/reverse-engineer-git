@@ -122,7 +122,7 @@ export type AnalysisBudgetUsage = {
 };
 
 export type AnalysisMeta = {
-  provider: LlmProviderId | "heuristic";
+  provider: LlmProviderId;
   model: string;
   stopReason: AnalysisStopReason;
   confidence: AnalysisConfidence;
@@ -143,7 +143,7 @@ export type AnalysisLoopInput = {
   snapshot: RepoSnapshot;
   seed: RepoAnalysis;
   budget: AnalysisBudget;
-  llmConfig: LlmConfig | null;
+  llmConfig: LlmConfig;
 };
 
 export type AnalysisLoopResult = {

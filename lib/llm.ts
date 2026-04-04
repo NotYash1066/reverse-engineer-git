@@ -3,6 +3,20 @@ import { invokeGemini } from "@/lib/llm/providers/gemini";
 import { invokeOpenAiCompatible } from "@/lib/llm/providers/openai-compatible";
 import { LlmConfig, LlmProviderId, StructuredLlmResponse } from "@/lib/types";
 
+const SUPPORTED_PROVIDERS = new Set<LlmProviderId>([
+  "anthropic",
+  "openai-compatible",
+  "gemini",
+  "github-models",
+]);
+
+export class LlmConfigError extends Error {
+  constructor(message: string) {
+    super(message);
+    this.name = "LlmConfigError";
+  }
+}
+
 export async function invokeStructuredLlm(
   config: LlmConfig,
   prompt: string
@@ -20,20 +34,34 @@ export async function invokeStructuredLlm(
   }
 }
 
-export function resolveLlmConfig(): LlmConfig | null {
-  const provider = (process.env.LLM_PROVIDER ?? "").trim() as LlmProviderId | "";
+export function resolveLlmConfig(): LlmConfig {
+  const provider = (process.env.LLM_PROVIDER ?? "").trim();
   const model = (process.env.LLM_MODEL ?? "").trim();
+  const apiKey = (process.env.LLM_API_KEY ?? "").trim();
+  const baseUrl = process.env.LLM_BASE_URL?.trim();
 
-  if (!provider || !model) {
-    return null;
+  if (!provider || !model || !apiKey) {
+    throw new LlmConfigError(
+      "LLM is not configured. Set LLM_PROVIDER, LLM_MODEL, and LLM_API_KEY."
+    );
+  }
+
+  if (!isLlmProviderId(provider)) {
+    throw new LlmConfigError(
+      `Unsupported LLM provider: ${provider}. Expected one of: ${Array.from(SUPPORTED_PROVIDERS).join(", ")}.`
+    );
   }
 
   return {
     provider,
     model,
-    apiKey: process.env.LLM_API_KEY?.trim(),
-    baseUrl: process.env.LLM_BASE_URL?.trim(),
+    apiKey,
+    baseUrl,
   };
+}
+
+function isLlmProviderId(value: string): value is LlmProviderId {
+  return SUPPORTED_PROVIDERS.has(value as LlmProviderId);
 }
 
 function assertNever(value: never): never {

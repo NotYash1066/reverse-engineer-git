@@ -75,7 +75,7 @@ export function RepoForm({ onResult, onStatusChange }: RepoFormProps) {
           public repositories only
         </span>
         <span className="rounded-full border border-white/10 bg-white/5 px-3 py-1.5">
-          heuristic + optional LLM loop
+          LLM-backed repository analysis
         </span>
         <span className="rounded-full border border-white/10 bg-white/5 px-3 py-1.5">
           confidence + ambiguity aware

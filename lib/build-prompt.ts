@@ -1,10 +1,16 @@
 import { RepoAnalysis } from "@/lib/types";
 
-export function buildPrompt(analysis: RepoAnalysis): string {
+type PromptAnalysis = RepoAnalysis & {
+  assumptions?: string[];
+};
+
+export function buildPrompt(analysis: PromptAnalysis): string {
   const stack = analysis.stack.length > 0 ? analysis.stack.join(", ") : "Unknown stack";
   const features = toBulletList(analysis.keyFeatures);
   const architecture = toBulletList(analysis.architectureNotes);
   const evidence = toBulletList(analysis.evidence);
+  const assumptions = (analysis.assumptions ?? []).filter((assumption) => assumption.trim().length > 0);
+  const hasAssumptions = assumptions.length > 0;
 
   return [
     `Reverse engineer and recreate a project inspired by ${analysis.repo.fullName} (${analysis.repo.url}).`,
@@ -25,19 +31,28 @@ export function buildPrompt(analysis: RepoAnalysis): string {
     "Observed evidence from the public repository:",
     evidence,
     "",
+    ...(hasAssumptions
+      ? [
+          "Model-produced assumptions to preserve:",
+          toBulletList(assumptions),
+          "",
+        ]
+      : []),
     "Implementation instructions:",
     "- Recreate the product scope, folder structure, and technical choices suggested by the evidence above.",
     "- Preserve the likely user flows and module boundaries.",
     "- Use the detected stack unless there is a strong reason to substitute a close equivalent.",
     "- Start with the core path and highest-signal features before adding polish.",
-    "- If repository details are ambiguous, make the smallest reasonable assumption and state it explicitly.",
+    ...(hasAssumptions
+      ? ["- Preserve the explicit assumptions listed above when resolving any remaining ambiguity."]
+      : []),
     "",
     "Output format:",
     "1. Short project summary.",
     "2. Proposed architecture and folder layout.",
     "3. Step-by-step implementation plan.",
     "4. Key components, services, and data flows.",
-    "5. Final build notes and assumptions.",
+    hasAssumptions ? "5. Final build notes and assumptions." : "5. Final build notes.",
   ].join("\n");
 }
 

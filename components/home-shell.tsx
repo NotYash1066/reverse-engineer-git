@@ -14,7 +14,7 @@ const PROCESS_STEPS = [
 
 export function HomeShell() {
   const [result, setResult] = useState<AnalyzeRepoResponse | null>(null);
-  const [status, setStatus] = useState("Awaiting a public GitHub repository dossier.");
+  const [status, setStatus] = useState("Awaiting a public GitHub repository for LLM analysis.");
   const resultRef = useRef<HTMLDivElement | null>(null);
 
   useEffect(() => {
@@ -44,9 +44,9 @@ export function HomeShell() {
                 Turn a repository into a reconstruction brief that actually feels informed.
               </h1>
               <p className="max-w-2xl text-lg leading-8 text-[var(--muted)] sm:text-xl">
-                Paste a public GitHub URL or owner/name. The app studies the repository structure,
-                surfaces ambiguity, and delivers a reverse-engineering prompt that reads like a design
-                dossier instead of a generic summary.
+                Paste a public GitHub URL or owner/name. The app uses an LLM to study the repository
+                structure, surface ambiguity, and deliver a reverse-engineering prompt that reads like
+                a design dossier instead of a generic summary.
               </p>
             </div>
 

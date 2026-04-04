@@ -21,7 +21,7 @@ const geistMono = Geist_Mono({
 
 export const metadata: Metadata = {
   title: "Reverse Engineer Git",
-  description: "Analyze a public GitHub repository and generate a reverse-engineering prompt.",
+  description: "Analyze a public GitHub repository with an LLM and generate a reverse-engineering prompt.",
 };
 
 export default function RootLayout({

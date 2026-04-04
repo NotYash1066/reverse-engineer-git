@@ -15,10 +15,7 @@ import {
 } from "@/lib/types";
 
 export async function runAnalysisLoop(input: AnalysisLoopInput): Promise<AnalysisLoopResult> {
-  if (!input.llmConfig) {
-    return buildHeuristicOnlyResult(input.seed, input.snapshot.files);
-  }
-
+  const llmConfig = input.llmConfig;
   const fetchedFiles = [...input.snapshot.files];
   const fetchedPaths = input.snapshot.files.map((file) => file.path);
   let summary = toSummary(input.seed);
@@ -29,7 +26,7 @@ export async function runAnalysisLoop(input: AnalysisLoopInput): Promise<Analysi
   let confidence = defaultConfidence();
 
   for (let index = 0; index < input.budget.maxIterations; index += 1) {
-    const llmResponse = await invokeStructuredLlm(input.llmConfig, buildLoopPrompt({
+    const llmResponse = await invokeStructuredLlm(llmConfig, buildLoopPrompt({
       repo: input.seed.repo.fullName,
       summary,
       fetchedFiles,
@@ -95,8 +92,8 @@ export async function runAnalysisLoop(input: AnalysisLoopInput): Promise<Analysi
   return {
     summary,
     meta: {
-      provider: input.llmConfig.provider,
-      model: input.llmConfig.model,
+      provider: llmConfig.provider,
+      model: llmConfig.model,
       stopReason,
       confidence,
       ambiguities,
@@ -108,37 +105,17 @@ export async function runAnalysisLoop(input: AnalysisLoopInput): Promise<Analysi
 }
 
 export function buildFinalPrompt(result: AnalysisLoopResult, analysis: RepoAnalysis): string {
+  const assumptions = result.meta.assumptions.filter((assumption) => assumption.trim().length > 0);
+
   return buildPrompt({
     ...analysis,
     stack: result.summary.stack,
     appType: result.summary.appType,
     keyFeatures: result.summary.keyFeatures,
-    architectureNotes: [
-      ...result.summary.architectureNotes,
-      ...result.meta.assumptions.map((assumption) => `Assumption: ${assumption}`),
-    ],
+    architectureNotes: result.summary.architectureNotes,
     evidence: result.summary.evidence,
+    assumptions,
   });
-}
-
-function buildHeuristicOnlyResult(seed: RepoAnalysis, files: RepoFile[]): AnalysisLoopResult {
-  return {
-    summary: toSummary(seed),
-    meta: {
-      provider: "heuristic",
-      model: "heuristic-only",
-      stopReason: "model_completed",
-      confidence: defaultConfidence(),
-      ambiguities: [],
-      iterations: [],
-      budget: {
-        iterations: 0,
-        filesFetched: files.length,
-        bytesFetched: measureFiles(files),
-      },
-      assumptions: ["LLM provider not configured, using heuristic-only analysis."],
-    },
-  };
 }
 
 function toSummary(analysis: RepoAnalysis): AnalysisSummary {

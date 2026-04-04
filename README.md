@@ -1,36 +1,70 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# Reverse engineer git
 
-## Getting Started
+Reverse engineer git analyzes a public GitHub repository and returns a reverse-engineering brief plus a reconstruction prompt. Every analysis request requires a configured LLM provider.
 
-First, run the development server:
+## Getting started
+
+1. Install dependencies:
+
+```bash
+npm install
+```
+
+2. Copy the example environment file and fill in your provider settings:
+
+```bash
+cp .env.example .env.local
+```
+
+3. Configure the required LLM variables:
+
+```bash
+LLM_PROVIDER=
+LLM_MODEL=
+LLM_API_KEY=
+```
+
+4. If your provider uses a custom OpenAI-compatible endpoint, also set:
+
+```bash
+LLM_BASE_URL=
+```
+
+5. Optionally set `GITHUB_TOKEN` to raise GitHub API rate limits for public repository analysis.
+
+6. Start the development server:
 
 ```bash
 npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+Open [http://localhost:3000](http://localhost:3000) and submit a public GitHub URL or `owner/repo` reference.
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+## Environment variables
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+- `LLM_PROVIDER` — required provider id. Supported runtime values are `anthropic`, `gemini`, `github-models`, and `openai-compatible`.
+- `LLM_MODEL` — required model name for the selected provider.
+- `LLM_API_KEY` — required API key for providers that authenticate with a key.
+- `LLM_BASE_URL` — optional override for providers or gateways that need a custom base URL.
+- `GITHUB_TOKEN` — optional GitHub token used server-side for higher public API limits.
 
-## Learn More
+If the LLM configuration is missing, analysis requests should fail with a configuration error instead of returning a fallback summary.
 
-To learn more about Next.js, take a look at the following resources:
+## API check
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+With the dev server running and LLM configuration set, you can verify the analysis endpoint with:
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+```bash
+curl -sS -X POST http://localhost:3000/api/analyze \
+  -H 'Content-Type: application/json' \
+  -d '{"repo":"vercel/swr"}'
+```
 
-## Deploy on Vercel
+A successful response should include a non-empty `prompt` and LLM metadata for the configured provider and model.
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+## Scripts
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+- `npm run dev` — start the Next.js development server
+- `npm run build` — create a production build
+- `npm run start` — run the production build
+- `npm run lint` — run ESLint

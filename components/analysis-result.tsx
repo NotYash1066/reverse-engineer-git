@@ -13,6 +13,9 @@ export function AnalysisResult({ result }: AnalysisResultProps) {
     () => `${result.normalizedRepo.replace(/[\/]/g, "-")}-reverse-engineering-prompt.txt`,
     [result.normalizedRepo]
   );
+  const llmAssumptions = result.analysisMeta.assumptions.filter(
+    (assumption) => assumption.trim().length > 0
+  );
 
   async function handleCopy() {
     try {
@@ -86,14 +89,9 @@ export function AnalysisResult({ result }: AnalysisResultProps) {
                   : ["No major ambiguities were left unresolved."]
               }
             />
-            <SummaryBlock
-              title="Assumptions"
-              items={
-                result.analysisMeta.assumptions.length > 0
-                  ? result.analysisMeta.assumptions
-                  : ["No explicit assumptions were needed."]
-              }
-            />
+            {llmAssumptions.length > 0 ? (
+              <SummaryBlock title="Assumptions" items={llmAssumptions} />
+            ) : null}
           </div>
         </div>
       </div>
