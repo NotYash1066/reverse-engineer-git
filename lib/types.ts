@@ -36,6 +36,27 @@ export type RepoSnapshot = {
   files: RepoFile[];
 };
 
+export type RepoShapeKind =
+  | "single-app"
+  | "service"
+  | "library"
+  | "monorepo"
+  | "mixed"
+  | "docs-heavy";
+
+export type RepoShapeRoot = {
+  path: string;
+  kind: "workspace" | "app" | "service" | "package";
+  reason: string;
+};
+
+export type RepoShape = {
+  kind: RepoShapeKind;
+  roots: RepoShapeRoot[];
+  signals: string[];
+  ambiguous: boolean;
+};
+
 export type RepoAnalysis = {
   repo: {
     fullName: string;
