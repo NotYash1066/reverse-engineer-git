@@ -36,6 +36,27 @@ export type RepoSnapshot = {
   files: RepoFile[];
 };
 
+export type RepoShapeKind =
+  | "single-app"
+  | "service"
+  | "library"
+  | "monorepo"
+  | "mixed"
+  | "docs-heavy";
+
+export type RepoShapeRoot = {
+  path: string;
+  kind: "workspace" | "app" | "service" | "package";
+  reason: string;
+};
+
+export type RepoShape = {
+  kind: RepoShapeKind;
+  roots: RepoShapeRoot[];
+  signals: string[];
+  ambiguous: boolean;
+};
+
 export type RepoAnalysis = {
   repo: {
     fullName: string;
@@ -121,6 +142,22 @@ export type AnalysisBudgetUsage = {
   bytesFetched: number;
 };
 
+export type AnalysisCoverage = {
+  status: "narrow" | "representative" | "broad";
+  inspectedRoots: string[];
+  representativeRoots: string[];
+  fileCount: number;
+  bytesFetched: number;
+  gaps: string[];
+};
+
+export type AnalysisStageSummary = {
+  stage: "discovery" | "classification" | "targeted_retrieval" | "synthesis" | "scoring";
+  requestedPaths: string[];
+  fetchedPaths: string[];
+  notes: string[];
+};
+
 export type AnalysisMeta = {
   provider: LlmProviderId;
   model: string;
@@ -130,6 +167,9 @@ export type AnalysisMeta = {
   iterations: AnalysisIteration[];
   budget: AnalysisBudgetUsage;
   assumptions: string[];
+  repoShape: RepoShape;
+  coverage: AnalysisCoverage;
+  stageSummaries: AnalysisStageSummary[];
 };
 
 export type AnalyzeRepoResponse = {

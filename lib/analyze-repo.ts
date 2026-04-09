@@ -1,10 +1,15 @@
+import { classifyRepoShape } from "@/lib/repo-shape";
 import { RepoAnalysis, RepoFile, RepoSnapshot } from "@/lib/types";
 
 export function analyzeRepo(snapshot: RepoSnapshot): RepoAnalysis {
+  const repoShape = classifyRepoShape(snapshot);
   const stack = detectStack(snapshot);
-  const appType = detectAppType(snapshot);
+  const appType = repoShape.kind === "monorepo" ? "Monorepo software project" : detectAppType(snapshot);
   const keyFeatures = detectKeyFeatures(snapshot);
-  const architectureNotes = detectArchitectureNotes(snapshot);
+  const architectureNotes = [
+    `Repository shape classified as ${repoShape.kind}.`,
+    ...detectArchitectureNotes(snapshot),
+  ];
   const evidence = collectEvidence(snapshot);
 
   return {

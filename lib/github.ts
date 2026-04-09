@@ -1,58 +1,9 @@
 import { parseRepoInput } from "@/lib/parse-repo-input";
+import { planDiscoveryPaths } from "@/lib/retrieval-planner";
 import { RepoFile, RepoMetadata, RepoSnapshot } from "@/lib/types";
 
 const USER_AGENT = "reverse-engineer-git";
 const MAX_FILE_BYTES = 120_000;
-const MAX_FETCHED_FILES = 18;
-const CANDIDATE_FILE_PATTERNS = [
-  /^README(\.[a-z0-9]+)?$/i,
-  /^package\.json$/,
-  /^pnpm-workspace\.yaml$/,
-  /^package-lock\.json$/,
-  /^yarn\.lock$/,
-  /^tsconfig\.json$/,
-  /^next\.config\.(js|ts|mjs)$/,
-  /^vite\.config\.(js|ts|mjs)$/,
-  /^astro\.config\.(js|ts|mjs)$/,
-  /^svelte\.config\.(js|ts|mjs)$/,
-  /^angular\.json$/,
-  /^pom\.xml$/,
-  /^build\.gradle$/,
-  /^Cargo\.toml$/,
-  /^go\.mod$/,
-  /^requirements\.txt$/,
-  /^pyproject\.toml$/,
-  /^Dockerfile$/,
-  /^docker-compose\.ya?ml$/,
-  /^\.github\/workflows\/[^/]+\.ya?ml$/,
-  /^(apps|packages|services|frontend|backend|web|api|client|server)\/[^/]+\/package\.json$/,
-  /^(frontend|backend|web|api|client|server)\/package\.json$/,
-  /^(frontend|backend|web|api|client|server)\/(tsconfig\.json|requirements\.txt|pyproject\.toml|Cargo\.toml|go\.mod|Dockerfile)$/,
-  /^(apps|packages|services|frontend|backend|web|api|client|server)\/[^/]+\/(tsconfig\.json|requirements\.txt|pyproject\.toml|Cargo\.toml|go\.mod)$/,
-];
-
-const HIGH_PRIORITY_PATHS = new Set([
-  "README.md",
-  "README.mdx",
-  "package.json",
-  "pnpm-workspace.yaml",
-  "tsconfig.json",
-  "next.config.js",
-  "next.config.ts",
-  "vite.config.ts",
-  "vite.config.js",
-  "pyproject.toml",
-  "requirements.txt",
-  "Cargo.toml",
-  "go.mod",
-  "Dockerfile",
-  "client/package.json",
-  "server/package.json",
-  "frontend/package.json",
-  "backend/package.json",
-  "web/package.json",
-  "api/package.json",
-]);
 
 type TreeEntry = {
   path: string;
@@ -105,10 +56,7 @@ export async function fetchRepoSnapshot(input: string): Promise<RepoSnapshot> {
 }
 
 export function selectInitialContextPaths(allPaths: string[]): string[] {
-  return allPaths
-    .filter((path) => CANDIDATE_FILE_PATTERNS.some((pattern) => pattern.test(path)))
-    .sort((left, right) => scorePath(right) - scorePath(left) || left.localeCompare(right))
-    .slice(0, MAX_FETCHED_FILES);
+  return planDiscoveryPaths(allPaths);
 }
 
 export async function fetchRepoFiles(fullName: string, paths: string[]): Promise<RepoFile[]> {
@@ -183,32 +131,6 @@ async function githubRequest<T>(path: string): Promise<T> {
   }
 
   return (await response.json()) as T;
-}
-
-function scorePath(path: string): number {
-  let score = 0;
-
-  if (!path.includes("/")) {
-    score += 50;
-  }
-
-  if (HIGH_PRIORITY_PATHS.has(path)) {
-    score += 100;
-  }
-
-  if (/^(apps|packages|services|client|server|frontend|backend|web|api)\//.test(path)) {
-    score += 30;
-  }
-
-  if (path.endsWith("package.json")) {
-    score += 40;
-  }
-
-  if (/README/i.test(path)) {
-    score += 20;
-  }
-
-  return score;
 }
 
 function buildHeaders(): HeadersInit {
