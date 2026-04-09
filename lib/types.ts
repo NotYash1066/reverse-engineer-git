@@ -167,6 +167,9 @@ export type AnalysisMeta = {
   iterations: AnalysisIteration[];
   budget: AnalysisBudgetUsage;
   assumptions: string[];
+  repoShape: RepoShape;
+  coverage: AnalysisCoverage;
+  stageSummaries: AnalysisStageSummary[];
 };
 
 export type AnalyzeRepoResponse = {
