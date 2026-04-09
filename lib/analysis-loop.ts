@@ -82,7 +82,17 @@ export async function runAnalysisLoop(
       alreadyFetched: fetchedPaths,
       requestedPaths: llmResponse.contextRequests.map((request) => request.path),
     });
-    const nextFiles = await fetchFiles(input.snapshot.repo.full_name, nextPaths);
+    const remainingFiles = input.budget.maxFiles - fetchedFiles.length;
+    const remainingBytes = input.budget.maxBytes - measureFiles(fetchedFiles);
+    const candidateFiles = await fetchFiles(input.snapshot.repo.full_name, nextPaths);
+    const nextFiles: RepoFile[] = [];
+
+    for (const file of candidateFiles) {
+      if (nextFiles.length >= remainingFiles) break;
+      const usedBytes = nextFiles.reduce((total, nextFile) => total + nextFile.size, 0);
+      if (usedBytes + file.size > remainingBytes) break;
+      nextFiles.push(file);
+    }
 
     fetchedFiles.push(...nextFiles);
     fetchedPaths.push(...nextFiles.map((file) => file.path));
@@ -183,6 +193,7 @@ export function buildFinalPrompt(result: AnalysisLoopResult, analysis: RepoAnaly
     architectureNotes: result.summary.architectureNotes,
     evidence: result.summary.evidence,
     assumptions,
+    ambiguities: result.meta.ambiguities,
     repoShape: result.meta.repoShape,
     coverage: result.meta.coverage,
   });

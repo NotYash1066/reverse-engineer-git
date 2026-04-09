@@ -20,6 +20,21 @@ describe("classifyRepoShape", () => {
     expect(result.ambiguous).toBe(false);
   });
 
+  it("infers monorepo roots from workspace paths when package manifests are missing", () => {
+    const snapshot = makeRepoSnapshot({
+      allPaths: [
+        "pnpm-workspace.yaml",
+        "apps/web/src/app/page.tsx",
+        "apps/api/src/index.ts",
+      ],
+    });
+
+    const result = classifyRepoShape(snapshot);
+
+    expect(result.kind).toBe("monorepo");
+    expect(result.roots.map((root) => root.path)).toEqual(["apps/web", "apps/api"]);
+  });
+
   it("classifies a single app from root manifests", () => {
     const snapshot = makeRepoSnapshot({
       allPaths: ["package.json", "next.config.ts", "app/page.tsx"],

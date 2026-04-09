@@ -8,17 +8,34 @@ export function classifyRepoShape(snapshot: RepoSnapshot): RepoShape {
   const pathSet = new Set(snapshot.allPaths);
   const roots: RepoShapeRoot[] = [];
   const signals: string[] = [];
+  const seenRoots = new Set<string>();
 
   if (pathSet.has("pnpm-workspace.yaml")) {
     signals.push("workspace manifest");
   }
 
   for (const path of snapshot.allPaths) {
-    const match = path.match(/^(apps|packages|services)\/([^/]+)\/package\.json$/);
-    if (match) {
-      const [, bucket, name] = match;
-      const kind = bucket === "services" ? "service" : bucket === "packages" ? "package" : "app";
-      roots.push(makeRoot(`${bucket}/${name}`, kind, `${bucket} package manifest`));
+    const packageMatch = path.match(/^(apps|packages|services)\/([^/]+)\/package\.json$/);
+    if (packageMatch) {
+      const [, bucket, name] = packageMatch;
+      const rootPath = `${bucket}/${name}`;
+      if (!seenRoots.has(rootPath)) {
+        const kind = bucket === "services" ? "service" : bucket === "packages" ? "package" : "app";
+        roots.push(makeRoot(rootPath, kind, `${bucket} package manifest`));
+        seenRoots.add(rootPath);
+      }
+      continue;
+    }
+
+    const workspaceMatch = path.match(/^(apps|packages|services)\/([^/]+)\//);
+    if (workspaceMatch) {
+      const [, bucket, name] = workspaceMatch;
+      const rootPath = `${bucket}/${name}`;
+      if (!seenRoots.has(rootPath)) {
+        const kind = bucket === "services" ? "service" : bucket === "packages" ? "package" : "app";
+        roots.push(makeRoot(rootPath, kind, `${bucket} workspace path`));
+        seenRoots.add(rootPath);
+      }
     }
   }
 
@@ -27,7 +44,7 @@ export function classifyRepoShape(snapshot: RepoSnapshot): RepoShape {
       kind: "monorepo",
       roots,
       signals: [...signals, `${roots.length} package roots`],
-      ambiguous: false,
+      ambiguous: roots.length === 0,
     };
   }
 

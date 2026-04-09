@@ -42,43 +42,55 @@ vi.mock("@/lib/analyze-repo", () => ({
   }),
 }));
 
-vi.mock("@/lib/analysis-loop", () => ({
-  runAnalysisLoop: async () => ({
-    summary: {
-      stack: ["TypeScript", "Next.js"],
-      appType: "Web application",
-      keyFeatures: ["Repository analysis"],
-      architectureNotes: ["Staged analysis"],
-      evidence: ["README.md"],
-    },
-    meta: {
-      provider: "openai-compatible",
-      model: "test-model",
-      stopReason: "confidence_reached",
-      confidence: { overall: 0.84, stack: 0.88, appType: 0.84, features: 0.8, architecture: 0.78 },
-      ambiguities: [],
-      iterations: [],
-      budget: { iterations: 1, filesFetched: 4, bytesFetched: 1234 },
-      assumptions: [],
-      repoShape: {
-        kind: "single-app",
-        roots: [{ path: ".", kind: "app", reason: "root app manifests" }],
-        signals: ["root package.json"],
-        ambiguous: false,
+vi.mock("@/lib/analysis-loop", async () => {
+  const actual = await vi.importActual<typeof import("@/lib/analysis-loop")>("@/lib/analysis-loop");
+
+  return {
+    ...actual,
+    runAnalysisLoop: async () => ({
+      summary: {
+        stack: ["TypeScript", "Next.js"],
+        appType: "Web application",
+        keyFeatures: ["Repository analysis"],
+        architectureNotes: ["Staged analysis"],
+        evidence: ["README.md"],
       },
-      coverage: {
-        status: "representative",
-        inspectedRoots: ["."],
-        representativeRoots: ["."],
-        fileCount: 4,
-        bytesFetched: 1234,
-        gaps: [],
+      meta: {
+        provider: "openai-compatible",
+        model: "test-model",
+        stopReason: "confidence_reached",
+        confidence: { overall: 0.84, stack: 0.88, appType: 0.84, features: 0.8, architecture: 0.78 },
+        ambiguities: [
+          {
+            topic: "backend runtime",
+            reason: "No deployment config was fetched",
+            severity: "medium",
+            status: "open",
+            relatedPaths: ["package.json"],
+          },
+        ],
+        iterations: [],
+        budget: { iterations: 1, filesFetched: 4, bytesFetched: 1234 },
+        assumptions: [],
+        repoShape: {
+          kind: "single-app",
+          roots: [{ path: ".", kind: "app", reason: "root app manifests" }],
+          signals: ["root package.json"],
+          ambiguous: false,
+        },
+        coverage: {
+          status: "representative",
+          inspectedRoots: ["."],
+          representativeRoots: ["."],
+          fileCount: 4,
+          bytesFetched: 1234,
+          gaps: [],
+        },
+        stageSummaries: [],
       },
-      stageSummaries: [],
-    },
-  }),
-  buildFinalPrompt: () => "reverse-engineering prompt",
-}));
+    }),
+  };
+});
 
 import { POST } from "@/app/api/analyze/route";
 
@@ -96,7 +108,9 @@ describe("POST /api/analyze", () => {
 
     expect(json.normalizedRepo).toBe("acme/example");
     expect(json.summary.appType).toBe("Web application");
-    expect(json.prompt).toBe("reverse-engineering prompt");
+    expect(json.prompt).toContain("- Repository shape: single-app (root package.json)");
+    expect(json.prompt).toContain("- Analysis coverage: representative; inspected roots: .");
+    expect(json.prompt).toContain("Unresolved ambiguities to account for:");
     expect(json.analysisMeta.repoShape.kind).toBe("single-app");
     expect(json.analysisMeta.coverage.status).toBe("representative");
   });

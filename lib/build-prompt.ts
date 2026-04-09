@@ -1,7 +1,8 @@
-import { AnalysisCoverage, RepoAnalysis, RepoShape } from "@/lib/types";
+import { AnalysisAmbiguity, AnalysisCoverage, RepoAnalysis, RepoShape } from "@/lib/types";
 
 type PromptAnalysis = RepoAnalysis & {
   assumptions?: string[];
+  ambiguities?: AnalysisAmbiguity[];
   repoShape?: RepoShape;
   coverage?: AnalysisCoverage;
 };
@@ -12,7 +13,9 @@ export function buildPrompt(analysis: PromptAnalysis): string {
   const architecture = toBulletList(analysis.architectureNotes);
   const evidence = toBulletList(analysis.evidence);
   const assumptions = (analysis.assumptions ?? []).filter((assumption) => assumption.trim().length > 0);
+  const ambiguities = (analysis.ambiguities ?? []).filter((ambiguity) => ambiguity.status === "open");
   const hasAssumptions = assumptions.length > 0;
+  const hasAmbiguities = ambiguities.length > 0;
   const repoShape = analysis.repoShape
     ? `${analysis.repoShape.kind} (${analysis.repoShape.signals.join(", ") || "shape signals unavailable"})`
     : "Unknown";
@@ -41,6 +44,13 @@ export function buildPrompt(analysis: PromptAnalysis): string {
     "Observed evidence from the public repository:",
     evidence,
     "",
+    ...(hasAmbiguities
+      ? [
+          "Unresolved ambiguities to account for:",
+          toBulletList(ambiguities.map((ambiguity) => `${ambiguity.topic}: ${ambiguity.reason}`)),
+          "",
+        ]
+      : []),
     ...(hasAssumptions
       ? [
           "Model-produced assumptions to preserve:",

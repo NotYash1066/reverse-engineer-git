@@ -52,3 +52,22 @@ describe("computeConfidence", () => {
     expect(confidence.architecture).toBeLessThan(confidence.stack);
   });
 });
+
+describe("buildCoverage for root repos", () => {
+  it("does not mark the root as inspected from an arbitrary nested file", () => {
+    const coverage = buildCoverage({
+      shape: {
+        kind: "single-app",
+        roots: [{ path: ".", kind: "app", reason: "root app manifests" }],
+        signals: ["root package.json"],
+        ambiguous: false,
+      },
+      fetchedPaths: ["lib/internal.ts"],
+      bytesFetched: 200,
+    });
+
+    expect(coverage.status).toBe("narrow");
+    expect(coverage.inspectedRoots).toEqual([]);
+    expect(coverage.gaps).toEqual(["No representative file fetched for ."]);
+  });
+});

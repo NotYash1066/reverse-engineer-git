@@ -81,4 +81,71 @@ describe("runAnalysisLoop", () => {
       "scoring",
     ]);
   });
+
+  it("does not exceed the configured file budget after retrieval", async () => {
+    const snapshot = makeRepoSnapshot({
+      allPaths: ["package.json", "next.config.ts", "app/page.tsx", "src/a.ts", "src/b.ts"],
+      files: [{ path: "package.json", size: 20, content: '{"dependencies":{"next":"16.2.2"}}' }],
+    });
+
+    const result = await runAnalysisLoop(
+      {
+        snapshot,
+        seed: {
+          repo: {
+            fullName: "acme/example",
+            url: "https://github.com/acme/example",
+            description: "Example",
+          },
+          stack: ["TypeScript"],
+          appType: "Web application",
+          keyFeatures: ["Repository analysis"],
+          architectureNotes: ["Initial heuristic analysis"],
+          evidence: ["Sampled files: 1"],
+        },
+        budget: {
+          maxIterations: 1,
+          maxFiles: 2,
+          maxBytes: 200,
+          confidenceThreshold: 0.9,
+        },
+        llmConfig: {
+          provider: "openai-compatible",
+          model: "test-model",
+          apiKey: "test-key",
+        },
+      },
+      {
+        invokeLlm: async () => ({
+          summary: {
+            stack: ["TypeScript", "Next.js"],
+            appType: "Web application",
+            keyFeatures: ["Repository analysis"],
+            architectureNotes: ["Budget aware retrieval"],
+            evidence: ["package.json"],
+          },
+          ambiguities: [],
+          assumptions: [],
+          continueAnalysis: true,
+          contextRequests: [
+            { kind: "file", path: "src/a.ts", reason: "Inspect source", priority: 10 },
+            { kind: "file", path: "src/b.ts", reason: "Inspect another source", priority: 9 },
+          ],
+          confidence: {
+            overall: 0.3,
+            stack: 0.3,
+            appType: 0.3,
+            features: 0.3,
+            architecture: 0.3,
+          },
+          notes: ["Need more context"],
+        }),
+        fetchFiles: async (_fullName, paths) =>
+          paths.map((path) => ({ path, size: 30, content: `export const value = '${path}';` })),
+      }
+    );
+
+    expect(result.meta.budget.filesFetched).toBe(2);
+    expect(result.meta.iterations[0]?.fetchedPaths).toEqual(["src/a.ts"]);
+  });
 });

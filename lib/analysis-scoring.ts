@@ -7,7 +7,13 @@ export function buildCoverage(input: {
 }): AnalysisCoverage {
   const inspectedRoots = input.shape.roots
     .map((root) => root.path)
-    .filter((root) => input.fetchedPaths.some((path) => (root === "." ? true : path.startsWith(root))));
+    .filter((root) =>
+      input.fetchedPaths.some((path) =>
+        root === "."
+          ? /(^|\/)(package\.json|tsconfig\.json|next\.config\.(js|ts|mjs)|README(\.[a-z0-9]+)?|app\/page\.tsx)$/i.test(path)
+          : path.startsWith(root)
+      )
+    );
 
   const missingRoots = input.shape.roots
     .map((root) => root.path)
