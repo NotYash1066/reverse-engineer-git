@@ -142,6 +142,22 @@ export type AnalysisBudgetUsage = {
   bytesFetched: number;
 };
 
+export type AnalysisCoverage = {
+  status: "narrow" | "representative" | "broad";
+  inspectedRoots: string[];
+  representativeRoots: string[];
+  fileCount: number;
+  bytesFetched: number;
+  gaps: string[];
+};
+
+export type AnalysisStageSummary = {
+  stage: "discovery" | "classification" | "targeted_retrieval" | "synthesis" | "scoring";
+  requestedPaths: string[];
+  fetchedPaths: string[];
+  notes: string[];
+};
+
 export type AnalysisMeta = {
   provider: LlmProviderId;
   model: string;
