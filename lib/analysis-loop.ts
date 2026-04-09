@@ -183,6 +183,8 @@ export function buildFinalPrompt(result: AnalysisLoopResult, analysis: RepoAnaly
     architectureNotes: result.summary.architectureNotes,
     evidence: result.summary.evidence,
     assumptions,
+    repoShape: result.meta.repoShape,
+    coverage: result.meta.coverage,
   });
 }
 

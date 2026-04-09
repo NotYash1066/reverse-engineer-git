@@ -1,7 +1,9 @@
-import { RepoAnalysis } from "@/lib/types";
+import { AnalysisCoverage, RepoAnalysis, RepoShape } from "@/lib/types";
 
 type PromptAnalysis = RepoAnalysis & {
   assumptions?: string[];
+  repoShape?: RepoShape;
+  coverage?: AnalysisCoverage;
 };
 
 export function buildPrompt(analysis: PromptAnalysis): string {
@@ -11,6 +13,12 @@ export function buildPrompt(analysis: PromptAnalysis): string {
   const evidence = toBulletList(analysis.evidence);
   const assumptions = (analysis.assumptions ?? []).filter((assumption) => assumption.trim().length > 0);
   const hasAssumptions = assumptions.length > 0;
+  const repoShape = analysis.repoShape
+    ? `${analysis.repoShape.kind} (${analysis.repoShape.signals.join(", ") || "shape signals unavailable"})`
+    : "Unknown";
+  const coverage = analysis.coverage
+    ? `${analysis.coverage.status}; inspected roots: ${analysis.coverage.inspectedRoots.join(", ") || "none"}`
+    : "Coverage unknown";
 
   return [
     `Reverse engineer and recreate a project inspired by ${analysis.repo.fullName} (${analysis.repo.url}).`,
@@ -20,6 +28,8 @@ export function buildPrompt(analysis: PromptAnalysis): string {
     "Repository context:",
     `- Description: ${analysis.repo.description ?? "No description provided."}`,
     `- App type: ${analysis.appType}`,
+    `- Repository shape: ${repoShape}`,
+    `- Analysis coverage: ${coverage}`,
     `- Detected stack: ${stack}`,
     "",
     "Likely major features to reproduce:",
